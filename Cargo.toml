@@ -1,0 +1,9 @@
+[workspace]
+
+members = [
+    "uref_share",
+    "tests"
+]
+
+[profile.release]
+lto = true
