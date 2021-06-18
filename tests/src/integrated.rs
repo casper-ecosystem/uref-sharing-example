@@ -37,12 +37,15 @@ impl IntegratedContarct {
 
         // Deploy the URef sharing contract onto the context.
         let session_code = Code::from("locked_with_share.wasm");
-        let session = SessionBuilder::new(session_code, runtime_args!(
-            "users"=> vec![user_key.clone()],
-        ))
-            .with_address(admin_addr)
-            .with_authorization_keys(&[admin_addr])
-            .build();
+        let session = SessionBuilder::new(
+            session_code,
+            runtime_args!(
+                "users"=> vec![user_key.clone()],
+            ),
+        )
+        .with_address(admin_addr)
+        .with_authorization_keys(&[admin_addr])
+        .build();
         context.run(session);
 
         // Get sharing contract hash
@@ -85,10 +88,10 @@ impl IntegratedContarct {
 
     /// Call the function that gets the user rights to call the access restricted function.
     pub fn retrieve_urefs(&mut self, caller: &AccountHash) {
-        let session_code = Code::Hash(self.locked_hash, "retrieve_urefs".to_string());
+        let session_code = Code::Hash(self.locked_hash, "get_access".to_string());
         let session = SessionBuilder::new(
             session_code,
-            runtime_args! {},
+            runtime_args! {"this_contract"=> self.package_hash},
         )
         .with_address(*caller)
         .with_authorization_keys(&[*caller])

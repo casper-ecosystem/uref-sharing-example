@@ -18,6 +18,12 @@ that deals with the storage and sharing of the URefs. Then the user that was des
 retrieves the access right URef from the storage contract. From that point on that user can use also
 use the restricted entrypoint.
 
+It is possible to serve this feature from the same contract as the one you wish to share URefs of/from.
+
+- `share.rs`: standalone uref storage contract.
+- `locked.rs`: testing contract.
+- `locked_with_share.rs`: testing contract with the uref sharing feature integrated into it.
+
 ## make commands
 
 Add wasm32-unknown-unknown target to the crate.
@@ -44,7 +50,7 @@ $ make lint
 
 See Casper documentation: [Deploying Contracts](https://docs.casperlabs.io/en/latest/dapp-dev-guide/deploying-contracts.html) and [Contracts on the Blockchain](https://docs.casperlabs.io/en/latest/dapp-dev-guide/calling-contracts.html).
 
-## Contract entrypoints
+## Contract entrypoints (Standalone edition)
 
 ### URef Sharing Contract
 
@@ -54,13 +60,14 @@ See Casper documentation: [Deploying Contracts](https://docs.casperlabs.io/en/la
     - Type: Contract
     - Description: Retrieves URef stored under callers `AccountHash`.
 
-- `append_uref`:
+- `store_uref`:
     - Arguments:
         - `account_pubkey` - PublicKey
         - `uref` - URef
     - Return: None
     - Type: Contract
     - Description: Stores a `URef` in the contract under the `AccountHash` derived from the provided PublicKey.
+    If there is a URef already stored to this account, the one stored will be overwritten with the new one.
 
 ### Locked Contract
 
@@ -70,6 +77,38 @@ See Casper documentation: [Deploying Contracts](https://docs.casperlabs.io/en/la
     - Return: None
     - Type: Session
     - Description: Fetches access URef from `share_contract` and stores it in the callers account storage.
+
+- `group_access_only`:
+    - Arguments: None
+    - Type: Contract
+    - Description: Reverts with `777` user error. Only callable with access.
+
+
+
+## Contract entrypoints (Integrated edition)
+
+- `retrieve_urefs`:
+    - Arguments: None
+    - Return: Vec<URef>
+    - Type: Contract
+    - Description: Retrieves URefs stored under callers `AccountHash`.
+
+- `append_urefs`:
+    - Arguments:
+        - `account_pubkeys` - Vec<PublicKey>
+        - `urefs` - Vec<URef>
+    - Return: None
+    - Type: Contract
+    - Description: Stores the `URef`s in the contract under the `AccountHash`es derived from the provided PublicKeys.
+    Each individual account gets a uref, in the order both lists are supplied.
+
+- `get_access`:
+    - Arguments:
+        - `this_contract` - URef
+    - Return: None
+    - Type: Session
+    - Description: Fetches access URefs from `this_contract` via the `retrieve_urefs` entrypoint
+    and stores them in the callers account storage, under themselves as their key.
 
 - `group_access_only`:
     - Arguments: None

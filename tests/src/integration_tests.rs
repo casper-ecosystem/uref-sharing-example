@@ -5,6 +5,7 @@ mod standalone;
 mod tests {
     // Standalone version tests
     use super::standalone::ShareContract;
+
     #[test]
     #[should_panic(expected = "ApiError::User(777)")]
     fn deployer_calls_function() {
@@ -58,7 +59,11 @@ mod tests {
     }
 
     // Integrated version tests
+    // These are the same tests as with the standalone version but the uref storage feature is written and
+    // available from inside the same context.
+
     use super::integrated::IntegratedContarct;
+
     #[test]
     #[should_panic(expected = "ApiError::User(777)")]
     fn integrated_deployer_calls_function() {
@@ -87,7 +92,6 @@ mod tests {
 
         // User retrieves access rights to the function.
         contract.retrieve_urefs(&contract.user.clone());
-
         // User now has access rights to call the access restricted function.
         contract.call_locked(&contract.user.clone());
 

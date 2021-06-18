@@ -25,7 +25,7 @@ pub fn get_entry_points() -> EntryPoints {
         EntryPointType::Contract,
     ));
     entry_points.add_entry_point(EntryPoint::new(
-        "append_uref",
+        "store_uref",
         vec![
             Parameter::new("uref".to_string(), CLType::URef),
             Parameter::new("account_pubkey".to_string(), CLType::PublicKey),
@@ -82,7 +82,7 @@ fn retrieve_uref() {
 }
 
 #[no_mangle]
-fn append_uref() {
+fn store_uref() {
     let user: PublicKey = get_named_arg("account_pubkey");
     let uref: URef = get_named_arg("uref");
     set_key(&user.to_account_hash().to_string(), uref);

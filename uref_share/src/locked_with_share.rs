@@ -14,11 +14,11 @@ use contract::{
 use types::{
     bytesrepr::{FromBytes, ToBytes},
     contracts::ContractPackageHash,
-    runtime_args, ApiError, CLType, CLTyped, EntryPoint, EntryPointAccess, EntryPointType,
+    runtime_args, ApiError, CLType, CLTyped, CLValue, EntryPoint, EntryPointAccess, EntryPointType,
     EntryPoints, Key, Parameter, PublicKey, RuntimeArgs, URef,
 };
 
-pub fn prepare_access(contract_package_hash: &ContractPackageHash) -> (Vec<PublicKey>, Vec<URef>){
+pub fn prepare_access(contract_package_hash: &ContractPackageHash) -> (Vec<PublicKey>, Vec<URef>) {
     // Get list of public keys of the potential admins
     let users: Vec<PublicKey> = runtime::get_named_arg("users");
 
@@ -50,10 +50,7 @@ pub fn get_entry_points() -> EntryPoints {
 
     entry_points.add_entry_point(EntryPoint::new(
         "get_access",
-        vec![Parameter::new(
-            "urefs".to_string(),
-            CLType::List(Box::new(CLType::URef)),
-        )],
+        vec![Parameter::new("this_contract".to_string(), CLType::URef)],
         CLType::Unit,
         EntryPointAccess::Public,
         EntryPointType::Session,
@@ -61,7 +58,7 @@ pub fn get_entry_points() -> EntryPoints {
     entry_points.add_entry_point(EntryPoint::new(
         "retrieve_urefs",
         vec![],
-        CLType::Unit,
+        CLType::List(Box::new(CLType::URef)),
         EntryPointAccess::Public,
         EntryPointType::Contract,
     ));
@@ -69,7 +66,10 @@ pub fn get_entry_points() -> EntryPoints {
         "append_urefs",
         vec![
             Parameter::new("urefs".to_string(), CLType::List(Box::new(CLType::URef))),
-            Parameter::new("account_pubkeys".to_string(), CLType::List(Box::new(CLType::PublicKey))),
+            Parameter::new(
+                "account_pubkeys".to_string(),
+                CLType::List(Box::new(CLType::PublicKey)),
+            ),
         ],
         CLType::Unit,
         EntryPointAccess::Public,
@@ -127,43 +127,47 @@ pub fn install_or_upgrade_contract(name: String) {
 fn append_urefs() {
     let urefs: Vec<URef> = get_named_arg("urefs");
     let mut users: Vec<PublicKey> = get_named_arg("account_pubkeys");
-    if urefs.len()!=users.len(){
+    if urefs.len() != users.len() {
         revert(ApiError::User(3));
     }
 
-    for uref in urefs{
-        let user_key = users.pop().unwrap_or_revert()
-            .to_account_hash()
-            .to_string();
+    for uref in urefs {
+        let user_key = users.pop().unwrap_or_revert().to_account_hash().to_string();
         let mut personal_uref_list: Vec<URef> = get_key(&user_key);
         personal_uref_list.push(uref);
         set_key(&user_key, personal_uref_list);
     }
 }
 
+/// Getter function for the stored URefs
 #[no_mangle]
 fn retrieve_urefs() {
     let urefs: Vec<URef> = get_key(&runtime::get_caller().to_string());
     if urefs.is_empty() {
         revert(ApiError::User(1));
     }
-    let _: () = runtime::call_versioned_contract(
-        get_key("locked-with-share-package-hash"),
-        None,
-        "get_access",
-        runtime_args! {"urefs" => urefs},
-    );
+    runtime::ret(CLValue::from_t(urefs).unwrap_or_revert())
 }
 
+/// Account context function that calls retrieve and then stores the received URefs.
 #[no_mangle]
 fn get_access() {
-    let mut urefs: Vec<URef> = runtime::get_named_arg("urefs");
+    let this_contract_package: ContractPackageHash = runtime::get_named_arg("this_contract");
+    let urefs: Vec<URef> = runtime::call_versioned_contract(
+        this_contract_package,
+        None,
+        "retrieve_urefs",
+        runtime_args! {},
+    );
     if urefs.is_empty() {
         revert(ApiError::User(2));
     }
-    let mut my_keys: Vec<URef> = get_key("my_access_keys");
-    my_keys.append(&mut urefs);
-    set_key("my_access_keys", my_keys)
+    for uref in urefs {
+        if uref == URef::default() {
+            revert(ApiError::User(4))
+        }
+        runtime::put_key(&uref.to_string(), Key::URef(uref));
+    }
 }
 
 #[no_mangle]
