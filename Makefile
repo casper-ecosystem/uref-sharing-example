@@ -18,5 +18,6 @@ clean:
 copy-wasm-file-to-test:
 	cp target/wasm32-unknown-unknown/release/uref-share.wasm tests/wasm
 	cp target/wasm32-unknown-unknown/release/locked.wasm tests/wasm
+	cp target/wasm32-unknown-unknown/release/locked_with_share.wasm tests/wasm
 
 test: build-contract copy-wasm-file-to-test test-only
