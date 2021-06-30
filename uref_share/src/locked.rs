@@ -33,7 +33,7 @@ pub fn prepare_access(contract_package_hash: &ContractPackageHash) {
         let _: () = runtime::call_versioned_contract(
             share_contract,
             None,
-            "append_uref",
+            "store_uref",
             runtime_args! {"uref" => admin_group.pop().unwrap_or_revert(), "account_pubkey" => user},
         );
     }

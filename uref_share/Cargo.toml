@@ -21,6 +21,13 @@ bench = false
 doctest = false
 test = false
 
+[[bin]]
+name = "locked_with_share"
+path = "src/locked_with_share.rs"
+bench = false
+doctest = false
+test = false
+
 
 [features]
 default = ["contract/std", "types/std"]
